@@ -12,7 +12,11 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [windows/amd64, linux/amd64, darwin/amd64, darwin/arm64]
+        goos: [linux, windows, darwin]
+        goarch: [amd64]
+        include:
+          - goos: darwin
+            goarch: arm64
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,35 +26,33 @@ jobs:
           go-version: "1.21"
 
       - name: Build
-        run: |
-          GOOS=${{ matrix.os }}  go build -ldflags="-s -w" -o my-agent .
         env:
-          GOOS: ${{ matrix.os }}
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          ext=""
+          [ "$GOOS" = "windows" ] && ext=".exe"
+          go build -ldflags="-s -w" -o "my-agent-$GOOS-$GOARCH$ext" .
 
-      - name: Upload
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: my-agent-${{ matrix.os }}
-          path: my-agent*
+          name: my-agent-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: my-agent-*
 
   release:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
 
-      - name: Rename & compress
-        run: |
-          for dir in my-agent-*; do
-            ext=""
-            case "$dir" in
-              *windows*) ext=".exe" ;;
-            esac
-            mv "$dir/my-agent" "my-agent-$dir$ext"
-          done
-          ls -la
+      - name: List files
+        run: ls -la artifacts/
 
       - uses: softprops/action-gh-release@v2
         with:
-          files: my-agent-*
+          files: artifacts/*
           generate_release_notes: true
