@@ -1,30 +1,32 @@
 ## v0.1.0 — Rilis Perdana
 
-AI coding agent di terminal. Bisa baca/tulis file, git, search web, jalankan command, dll.
+AI coding agent di terminal. Baca/tulis file, git, search web, jalankan command — dari terminal.
 
-### Cara Install (paling mudah)
+### Install
 
-Buka PowerShell, paste ini:
-
+**Windows** — Buka PowerShell, paste:
 ```powershell
 irm https://raw.githubusercontent.com/Gopartner/my-agent/main/install.ps1 | iex
 ```
 
-Selesai, ketik: `my-agent`
+**Mac / Linux** — Buka Terminal, paste:
+```bash
+curl -fsSL https://raw.githubusercontent.com/Gopartner/my-agent/main/install.sh | bash
+```
 
-### Atau download langsung
+**Kalau sudah punya Go:**
+```bash
+go install github.com/gopartner/my-agent@latest
+```
 
-| Platform | File |
-|---|---|
-| Windows | `my-agent-windows-amd64.exe` |
-| Linux | `my-agent-linux-amd64` |
-| macOS Intel | `my-agent-darwin-amd64` |
-| macOS Apple Silicon | `my-agent-darwin-arm64` |
+### Cara pakai
+```bash
+my-agent
+```
 
-> SmartScreen muncul? Klik **More info** → **Run anyway** — ini wajar karena file belum di-sign.
+Pertama jalan tinggal paste Hugging Face token. Sekali doang.
 
 ### Fitur
-- TUI chat dengan streaming token realtime
-- 14 tools: read_file, write_file, edit_file, run_command, search_code, git, web_search, dll
-- First-run wizard: tinggal masukkan token sekali, otomatis tersimpan
-- Session persistence
+- TUI chat dengan streaming realtime
+- 14 tools: file, git, shell, web search, dll
+- First-run wizard (token disimpan otomatis)

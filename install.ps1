@@ -1,67 +1,88 @@
-param(
-    [string]$InstallDir = "$HOME\my-agent"
-)
+#!/usr/bin/env pwsh
+<#
+.SYNOPSIS
+    Instal my-agent — AI coding agent di terminal.
+    Mirip kayak install Node.js: satu perintah, langsung bisa dipakai.
+.DESCRIPTION
+    - Otomatis install Go lewat winget kalo belum ada
+    - Install my-agent via go install
+    - Tambah PATH jika perlu
+    - Token diminta pas pertama kali jalan, bukan pas install
+.EXAMPLE
+    irm https://raw.githubusercontent.com/Gopartner/my-agent/main/install.ps1 | iex
+#>
 
 $ErrorActionPreference = "Stop"
-$repo = "https://github.com/Gopartner/my-agent"
+$repo = "github.com/gopartner/my-agent"
 
-Write-Host ""
-Write-Host "  ========================================" -ForegroundColor Cyan
-Write-Host "     my-agent Installer" -ForegroundColor Cyan
-Write-Host "  ========================================" -ForegroundColor Cyan
-Write-Host ""
+function Print-Banner {
+    Write-Host ""
+    Write-Host "  ╔═══════════════════════════════════╗" -ForegroundColor Cyan
+    Write-Host "  ║       my-agent Installer          ║" -ForegroundColor Cyan
+    Write-Host "  ║   AI coding agent di terminal     ║" -ForegroundColor Cyan
+    Write-Host "  ╚═══════════════════════════════════╝" -ForegroundColor Cyan
+    Write-Host ""
+}
 
-# Cek Go
-if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
-    Write-Host "Go tidak ditemukan. Install Go dulu..." -ForegroundColor Yellow
-    if (Get-Command winget -ErrorAction SilentlyContinue) {
-        winget install GoLang.Go --silent
-        $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
-        if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
-            Write-Host "Gagal install Go otomatis. Install manual: https://go.dev/dl/" -ForegroundColor Red
-            exit 1
-        }
-    } else {
-        Write-Host "Download Go dari: https://go.dev/dl/" -ForegroundColor Red
+function Ensure-Go {
+    if (Get-Command go -ErrorAction SilentlyContinue) {
+        Write-Host "  ✔ Go $(go version)" -ForegroundColor Green
+        return
+    }
+    Write-Host "  Menginstall Go..." -ForegroundColor Yellow
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        Write-Host "  ✖ winget tidak tersedia. Install Go dulu:" -ForegroundColor Red
+        Write-Host "    https://go.dev/dl/" -ForegroundColor White
         exit 1
+    }
+    winget install GoLang.Go --silent --accept-package-agreements 2>&1 | Out-Null
+    # Reload PATH
+    $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
+    if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
+        Write-Host "  ✖ Gagal install Go otomatis." -ForegroundColor Red
+        Write-Host "    Install manual: https://go.dev/dl/" -ForegroundColor White
+        exit 1
+    }
+    Write-Host "  ✔ Go $(go version)" -ForegroundColor Green
+}
+
+function Install-MyAgent {
+    Write-Host "  Menginstall my-agent..." -ForegroundColor Yellow
+    $output = go install "$repo@latest" 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  ✖ Gagal install: $output" -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "  ✔ my-agent terinstall" -ForegroundColor Green
+}
+
+function Ensure-PATH {
+    $targetDir = "$HOME\go\bin"
+    $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+    if ($userPath -notlike "*$targetDir*") {
+        [Environment]::SetEnvironmentVariable("Path", "$targetDir;$userPath", "User")
+        $env:Path = "$targetDir;$env:Path"
+        Write-Host "  ✔ PATH ditambahkan: $targetDir" -ForegroundColor Green
     }
 }
 
-# Build dari source (paling aman, no SmartScreen)
-Write-Host "Mengunduh & build my-agent..." -ForegroundColor Cyan
-$tmpDir = "$env:TEMP\my-agent-install"
-if (Test-Path $tmpDir) { Remove-Item -Recurse -Force $tmpDir }
-git clone --depth 1 $repo $tmpDir 2>&1 | Out-Null
-
-Push-Location $tmpDir
-go build -ldflags="-s -w" -o my-agent.exe .
-if ($LASTEXITCODE -ne 0) {
-    Pop-Location
-    Write-Host "Build gagal!" -ForegroundColor Red
-    exit 1
-}
-Pop-Location
-
-# Buat folder install
-if (-not (Test-Path $InstallDir)) {
-    New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
+function Show-Done {
+    Write-Host ""
+    Write-Host "  ───────────────────────────────────" -ForegroundColor Gray
+    Write-Host "  ✔ my-agent siap dipakai!" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "  Jalankan di terminal:" -ForegroundColor White
+    Write-Host "    my-agent" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  Pertama kali jalan, tinggal masukkin" -ForegroundColor Gray
+    Write-Host "  Hugging Face token. Sekali doang." -ForegroundColor Gray
+    Write-Host "  Token: https://huggingface.co/settings/tokens" -ForegroundColor Gray
+    Write-Host "  ───────────────────────────────────" -ForegroundColor Gray
+    Write-Host ""
 }
 
-Copy-Item -Force "$tmpDir\my-agent.exe" "$InstallDir\my-agent.exe"
-Remove-Item -Recurse -Force $tmpDir
-
-# Tambah PATH
-$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-if ($userPath -notlike "*$InstallDir*") {
-    [Environment]::SetEnvironmentVariable("Path", "$InstallDir;$userPath", "User")
-    $env:Path = "$InstallDir;$env:Path"
-    Write-Host "  ✔ Folder ditambahkan ke PATH: $InstallDir" -ForegroundColor Green
-}
-
-Write-Host ""
-Write-Host "  ✔ my-agent siap!" -ForegroundColor Green
-Write-Host ""
-Write-Host "  Jalankan: my-agent" -ForegroundColor White
-Write-Host ""
-Write-Host "  Pertama kali jalan, kamu tinggal masukkan" -ForegroundColor Gray
-Write-Host "  Hugging Face token, sisanya otomatis." -ForegroundColor Gray
+Print-Banner
+Ensure-Go
+Install-MyAgent
+Ensure-PATH
+Show-Done
