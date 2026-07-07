@@ -69,7 +69,7 @@ type HFClient struct {
 
 func NewHFClient() *HFClient {
 	return &HFClient{
-		apiKey: os.Getenv("HF_TOKEN"),
+		apiKey: os.Getenv("MY_AGENT_TOKEN"),
 		client: &http.Client{},
 	}
 }

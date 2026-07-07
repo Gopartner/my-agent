@@ -10,10 +10,10 @@ import (
 )
 
 func main() {
-	apiKey := os.Getenv("HF_TOKEN")
+	apiKey := os.Getenv("MY_AGENT_TOKEN")
 	if apiKey == "" {
-		fmt.Println("❌ HF_TOKEN environment variable tidak ditemukan.")
-		fmt.Println("   Set dengan: $env:HF_TOKEN = \"hf_...\"")
+		fmt.Println("❌ MY_AGENT_TOKEN environment variable tidak ditemukan.")
+		fmt.Println("   Set dengan: $env:MY_AGENT_TOKEN = \"hf_...\"")
 		os.Exit(1)
 	}
 

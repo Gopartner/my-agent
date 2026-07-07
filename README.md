@@ -5,12 +5,12 @@ AI coding agent berbasis **DeepSeek-V3.1** (via Hugging Face Router) dengan **TU
 ## Fitur
 
 - **Chat TUI** — viewport + markdown rendering (glamour) + input with cursor
-- **Streaming realtime** — konten langsung muncul token per token
-- **Tool calling** — AI bisa menggunakan 14 tools secara otonom
-- **Session persistence** — history obrolan tersimpan otomatis ke `.agent_session.json`
+- **Streaming realtime** — token langsung muncul tanpa nunggu selesai
+- **Tool calling** — AI otonom menggunakan 14 tools
+- **Session persistence** — history tersimpan otomatis
 - **Dark theme** — lipgloss styling dengan accent `#7C3AED`
 
-## Tools yang Didukung
+## Tools
 
 | Tool | Deskripsi |
 |---|---|
@@ -25,48 +25,67 @@ AI coding agent berbasis **DeepSeek-V3.1** (via Hugging Face Router) dengan **TU
 | `git_status` | Status git |
 | `git_diff` | Lihat perubahan |
 | `git_commit` | Commit semua perubahan |
-| `web_search` | Cari informasi di web (DuckDuckGo) |
+| `web_search` | Cari informasi di web |
 | `web_fetch` | Ambil konten halaman web |
 | `http_request` | Kirim HTTP request |
 
-## Struktur Project
+## Persiapan
 
-```
-agent-go/
-├── main.go                  # Entry point
-├── internal/
-│   ├── agent.go             # Agent logic & tool loop
-│   ├── hfapi.go             # Hugging Face API client (SSE streaming)
-│   ├── session.go           # Save/load session JSON
-│   ├── styles.go            # Lipgloss theme
-│   ├── tools.go             # 14 tool definitions + execution
-│   └── tui.go               # Bubbletea TUI (viewport, input, spinner)
-├── go.mod
-└── go.sum
-```
+Buat Hugging Face token di https://huggingface.co/settings/tokens (permission `read`).
 
-## Prerequisites
+## Instalasi
 
-- Go 1.21+
-- Hugging Face API key ([dapatkan disini](https://huggingface.co/settings/tokens))
-
-## Instalasi & Usage
+### Opsi 1: Install Script (Windows)
 
 ```powershell
-# Clone atau cd ke folder
-cd agent-go
-
-# Set API key
-$env:HF_TOKEN = "hf_..."
-
-# Build
-go build -o agent-go.exe .
-
-# Jalankan
-./agent-go.exe
+git clone https://github.com/Gopartner/my-agent.git
+cd my-agent
+.\install.ps1
 ```
 
-### Keybindings
+Script akan build & copy `my-agent.exe` ke `$HOME\go\bin\` (otomatis ditambah ke PATH).
+
+### Opsi 2: Manual (semua OS)
+
+```bash
+git clone https://github.com/Gopartner/my-agent.git
+cd my-agent
+go install .
+```
+
+Binary terinstall di `$GOPATH/bin/my-agent`.
+
+### Opsi 3: Download Release
+
+Download binary dari [Releases](https://github.com/Gopartner/my-agent/releases), extract, dan letakkan di folder yang ada di PATH.
+
+## Menyetel Token
+
+### Temporer (per sesi)
+
+```powershell
+$env:MY_AGENT_TOKEN = "hf_..."
+my-agent
+```
+
+### Permanen (Windows)
+
+```powershell
+[Environment]::SetEnvironmentVariable("MY_AGENT_TOKEN", "hf_...", "User")
+```
+
+Buka terminal baru, lalu `my-agent`.
+
+### Permanen (Linux/Mac)
+
+Bash:
+```bash
+echo 'export MY_AGENT_TOKEN="hf_..."' >> ~/.bashrc
+source ~/.bashrc
+my-agent
+```
+
+## Keybindings
 
 | Key | Aksi |
 |---|---|
@@ -78,22 +97,30 @@ go build -o agent-go.exe .
 | `Ctrl+U` | Hapus seluruh input |
 | `Ctrl+C` / `Esc` | Keluar |
 
-## Dependencies
-
-- [bubbletea](https://github.com/charmbracelet/bubbletea) — TUI framework
-- [lipgloss](https://github.com/charmbracelet/lipgloss) — Styling
-- [bubbles](https://github.com/charmbracelet/bubbles) — Viewport & spinner
-- [glamour](https://github.com/charmbracelet/glamour) — Markdown rendering
-- [goquery](https://github.com/PuerkitoBio/goquery) — HTML parsing (web tools)
-
-## API
-
-Menggunakan Hugging Face Inference Router:
+## Struktur Project
 
 ```
-POST https://router.huggingface.co/v1/chat/completions
-Authorization: Bearer $HF_TOKEN
-Model: deepseek-ai/DeepSeek-V3.1
+internal/
+├── agent.go    # Agent logic & tool calling loop
+├── hfapi.go    # Hugging Face API client (SSE streaming)
+├── session.go  # Save/load session JSON
+├── styles.go   # Lipgloss theme (dark)
+├── tools.go    # 14 tool definitions + execution
+└── tui.go      # Bubbletea TUI (viewport, input, spinner)
+```
+
+## Build dari Source
+
+```bash
+go build -ldflags="-s -w" -o my-agent .
+```
+
+Cross-compile:
+
+```bash
+GOOS=linux   GOARCH=amd64 go build -ldflags="-s -w" -o my-agent-linux .
+GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o my-agent.exe .
+GOOS=darwin  GOARCH=arm64 go build -ldflags="-s -w" -o my-agent-mac .
 ```
 
 ## Lisensi

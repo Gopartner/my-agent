@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows/amd64, linux/amd64, darwin/amd64, darwin/arm64]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+
+      - name: Build
+        run: |
+          GOOS=${{ matrix.os }}  go build -ldflags="-s -w" -o my-agent .
+        env:
+          GOOS: ${{ matrix.os }}
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-agent-${{ matrix.os }}
+          path: my-agent*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+
+      - name: Rename & compress
+        run: |
+          for dir in my-agent-*; do
+            ext=""
+            case "$dir" in
+              *windows*) ext=".exe" ;;
+            esac
+            mv "$dir/my-agent" "my-agent-$dir$ext"
+          done
+          ls -la
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: my-agent-*
+          generate_release_notes: true
