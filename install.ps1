@@ -35,10 +35,7 @@ Write-Host ""
 Write-Host "✔ my-agent terinstall!" -ForegroundColor Green
 Write-Host ""
 Write-Host "Cara pakai:" -ForegroundColor Cyan
-Write-Host "  1. Set token:" -ForegroundColor White
-Write-Host "     `$env:MY_AGENT_TOKEN = `"hf_...`"" -ForegroundColor Gray
-Write-Host "  2. Jalankan:" -ForegroundColor White
-Write-Host "     my-agent" -ForegroundColor Gray
+Write-Host "  Ketik: my-agent" -ForegroundColor White
 Write-Host ""
-Write-Host "Tips: Simpan token permanent:" -ForegroundColor Yellow
-Write-Host "  [Environment]::SetEnvironmentVariable(""MY_AGENT_TOKEN"", ""hf_..."", ""User"")" -ForegroundColor Gray
+Write-Host "Pertama kali jalan, kamu akan diminta masukkan token HF." -ForegroundColor Yellow
+Write-Host "Token disimpan otomatis, tidak perlu setup ulang." -ForegroundColor Yellow

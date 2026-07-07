@@ -10,12 +10,11 @@ import (
 )
 
 func main() {
-	apiKey := os.Getenv("MY_AGENT_TOKEN")
-	if apiKey == "" {
-		fmt.Println("❌ MY_AGENT_TOKEN environment variable tidak ditemukan.")
-		fmt.Println("   Set dengan: $env:MY_AGENT_TOKEN = \"hf_...\"")
-		os.Exit(1)
+	token := internal.LoadToken()
+	if token == "" {
+		token = internal.PromptToken()
 	}
+	os.Setenv("MY_AGENT_TOKEN", token)
 
 	m := internal.InitialModel()
 	p := tea.NewProgram(
