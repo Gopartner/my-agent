@@ -275,7 +275,13 @@ func doProjectTree(wd string) string {
 }
 
 func doRunCommand(cmdStr, wd string) string {
-	cmd := exec.Command("cmd", "/C", cmdStr)
+	var shell, flag string
+	if ShellIsWindows() {
+		shell, flag = "cmd", "/C"
+	} else {
+		shell, flag = "sh", "-c"
+	}
+	cmd := exec.Command(shell, flag, cmdStr)
 	cmd.Dir = wd
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -362,6 +368,10 @@ func doHTTPRequest(method, url string, headers map[string]string, body string) s
 
 func escapeArg(s string) string {
 	return `"` + strings.ReplaceAll(s, `"`, `\"`) + `"`
+}
+
+func ShellIsWindows() bool {
+	return os.PathSeparator == '\\' && os.PathListSeparator == ';'
 }
 
 func min(a, b int) int {
