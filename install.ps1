@@ -1,41 +1,67 @@
 param(
-    [string]$InstallDir = "$HOME\go\bin"
+    [string]$InstallDir = "$HOME\my-agent"
 )
 
 $ErrorActionPreference = "Stop"
+$repo = "https://github.com/Gopartner/my-agent"
+
+Write-Host ""
+Write-Host "  ========================================" -ForegroundColor Cyan
+Write-Host "     my-agent Installer" -ForegroundColor Cyan
+Write-Host "  ========================================" -ForegroundColor Cyan
+Write-Host ""
 
 # Cek Go
 if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
-    Write-Host "Go belum terinstall. Download: https://go.dev/dl/" -ForegroundColor Red
-    exit 1
+    Write-Host "Go tidak ditemukan. Install Go dulu..." -ForegroundColor Yellow
+    if (Get-Command winget -ErrorAction SilentlyContinue) {
+        winget install GoLang.Go --silent
+        $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
+        if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
+            Write-Host "Gagal install Go otomatis. Install manual: https://go.dev/dl/" -ForegroundColor Red
+            exit 1
+        }
+    } else {
+        Write-Host "Download Go dari: https://go.dev/dl/" -ForegroundColor Red
+        exit 1
+    }
 }
 
-Write-Host "Building my-agent..." -ForegroundColor Cyan
-go build -ldflags="-s -w" -o my-agent.exe .
-if ($LASTEXITCODE -ne 0) { exit 1 }
+# Build dari source (paling aman, no SmartScreen)
+Write-Host "Mengunduh & build my-agent..." -ForegroundColor Cyan
+$tmpDir = "$env:TEMP\my-agent-install"
+if (Test-Path $tmpDir) { Remove-Item -Recurse -Force $tmpDir }
+git clone --depth 1 $repo $tmpDir 2>&1 | Out-Null
 
-# Pastikan folder tujuan ada
+Push-Location $tmpDir
+go build -ldflags="-s -w" -o my-agent.exe .
+if ($LASTEXITCODE -ne 0) {
+    Pop-Location
+    Write-Host "Build gagal!" -ForegroundColor Red
+    exit 1
+}
+Pop-Location
+
+# Buat folder install
 if (-not (Test-Path $InstallDir)) {
     New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
 }
 
-Copy-Item -Force my-agent.exe "$InstallDir\my-agent.exe"
-Remove-Item my-agent.exe
+Copy-Item -Force "$tmpDir\my-agent.exe" "$InstallDir\my-agent.exe"
+Remove-Item -Recurse -Force $tmpDir
 
-# Cek apakah InstallDir ada di PATH user
+# Tambah PATH
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
 if ($userPath -notlike "*$InstallDir*") {
-    $newPath = "$InstallDir;$userPath"
-    [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
-    $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + $newPath
-    Write-Host "Path ditambahkan: $InstallDir" -ForegroundColor Yellow
+    [Environment]::SetEnvironmentVariable("Path", "$InstallDir;$userPath", "User")
+    $env:Path = "$InstallDir;$env:Path"
+    Write-Host "  ✔ Folder ditambahkan ke PATH: $InstallDir" -ForegroundColor Green
 }
 
 Write-Host ""
-Write-Host "✔ my-agent terinstall!" -ForegroundColor Green
+Write-Host "  ✔ my-agent siap!" -ForegroundColor Green
 Write-Host ""
-Write-Host "Cara pakai:" -ForegroundColor Cyan
-Write-Host "  Ketik: my-agent" -ForegroundColor White
+Write-Host "  Jalankan: my-agent" -ForegroundColor White
 Write-Host ""
-Write-Host "Pertama kali jalan, kamu akan diminta masukkan token HF." -ForegroundColor Yellow
-Write-Host "Token disimpan otomatis, tidak perlu setup ulang." -ForegroundColor Yellow
+Write-Host "  Pertama kali jalan, kamu tinggal masukkan" -ForegroundColor Gray
+Write-Host "  Hugging Face token, sisanya otomatis." -ForegroundColor Gray
