@@ -48,9 +48,9 @@ function Ensure-Go {
 
 function Install-MyAgent {
     Write-Host "  Menginstall my-agent..." -ForegroundColor Yellow
-    $output = go install "$repo@latest" 2>&1
+    $output = & { go install "$repo@latest" 2>&1 } | %{ "$_" }
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "  ✖ Gagal install: $output" -ForegroundColor Red
+        Write-Host "  ✖ Gagal install: $($output -join "`n")" -ForegroundColor Red
         exit 1
     }
     Write-Host "  ✔ my-agent terinstall" -ForegroundColor Green

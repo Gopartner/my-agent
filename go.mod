@@ -1,6 +1,6 @@
 module github.com/gopartner/my-agent
 
-go 1.26.4
+go 1.25.0
 
 require (
 	github.com/PuerkitoBio/goquery v1.12.0
