@@ -11,8 +11,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-const sessionFile = ".agent_session.json"
-
 type ChatMsg struct {
 	Role    string
 	Content string
@@ -64,11 +62,11 @@ func InitialModel() model {
 		agent:   NewAgent("."),
 	}
 
-	saved, _ := LoadSession(sessionFile)
+	saved, _ := LoadSession()
 	if len(saved) > 1 {
 		m.messages = saved
 		m.chatHistory = extractChatHistory(saved)
-		m.statusMsg = "Sesi sebelumnya dilanjutkan"
+		m.statusMsg = "Sesi sebelumnya dilanjutkan. Ketik /baru untuk mulai baru."
 	}
 
 	return m
@@ -126,6 +124,31 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			userMsg := m.input
 			m.input = ""
 			m.cursorPos = 0
+
+			// Handle commands
+			if strings.HasPrefix(userMsg, "/") {
+				m.loading = false
+				switch userMsg {
+				case "/info":
+					m.chatHistory = append(m.chatHistory, ChatMsg{Role: "assistant", Content: InfoText()})
+				case "/aturan":
+					m.chatHistory = append(m.chatHistory, ChatMsg{Role: "assistant", Content: RulesText()})
+				case "/baru":
+					summary, _ := EndSession()
+					if summary.TotalMessages > 0 {
+						m.chatHistory = append(m.chatHistory, ChatMsg{Role: "assistant", Content: SessionSummaryText(summary)})
+					}
+					NewSession()
+					m.messages = []Message{{Role: "system", Content: SystemPrompt()}}
+					m.chatHistory = append(m.chatHistory, ChatMsg{Role: "assistant", Content: "Sesi baru dimulai. Ada yang bisa dibantu?"})
+				default:
+					m.chatHistory = append(m.chatHistory, ChatMsg{Role: "assistant", Content: "Perintah tidak dikenal. Coba: /info, /aturan, /baru"})
+				}
+				m.viewport.SetContent(m.renderChat())
+				m.viewport.GotoBottom()
+				return m, nil
+			}
+
 			m.chatHistory = append(m.chatHistory, ChatMsg{Role: "user", Content: userMsg})
 			m.messages = append(m.messages, Message{Role: "user", Content: userMsg})
 			m.loading = true
@@ -133,7 +156,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.toolResults = nil
 			m.statusMsg = ""
 
-			SaveSession(m.messages, sessionFile)
+			SaveSession(m.messages)
 
 			go m.processUserMessage(userMsg)
 
@@ -208,7 +231,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.chatHistory = append(m.chatHistory, ChatMsg{Role: "tool", Content: "  ✅ " + firstLine})
 			}
 			m.loading = false
-			SaveSession(m.messages, sessionFile)
+			SaveSession(m.messages)
 			if m.statusMsg == "" {
 				m.statusMsg = "Selesai ✅"
 			}
@@ -295,7 +318,7 @@ func (m model) View() string {
 	inputLine := inputStyle.Render(fmt.Sprintf(" %s█", m.input))
 	charCount := lipgloss.NewStyle().Foreground(lipgloss.Color("#6B7280")).Render(fmt.Sprintf(" %d", len(m.input)))
 
-	help := m.styles.Help.Width(m.width - 4).Render(" Ctrl+C: Keluar  |  Enter: Kirim  |  Ketik 'new' untuk sesi baru")
+	help := m.styles.Help.Width(m.width - 4).Render(" Ctrl+C: Keluar  |  Enter: Kirim  |  /info  /aturan  /baru")
 
 	sections := []string{header, "", chatView, "", inputLine + charCount, help}
 	return lipgloss.JoinVertical(lipgloss.Top, sections...)
