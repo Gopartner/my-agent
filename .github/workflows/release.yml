@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
 
 permissions:
   contents: write
@@ -12,36 +12,46 @@ jobs:
   build:
     strategy:
       matrix:
-        goos: [linux, windows, darwin]
-        goarch: [amd64]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         include:
-          - goos: darwin
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            ext: ""
+          - os: ubuntu-latest
+            goos: linux
             goarch: arm64
-          - goos: linux
+            ext: ""
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+            ext: ".exe"
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+            ext: ""
+          - os: macos-latest
+            goos: darwin
             goarch: arm64
-    runs-on: ubuntu-latest
+            ext: ""
+
+    runs-on: ${{ matrix.os }}
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: stable
 
       - name: Build
-        env:
-          CGO_ENABLED: "0"
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
         run: |
-          ext=""
-          [ "$GOOS" = "windows" ] && ext=".exe"
-          go build -ldflags="-s -w" -o "my-agent-$GOOS-$GOARCH$ext" .
+          go build -ldflags="-s -w" -o "my-agent-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}" .
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: my-agent-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: my-agent-*
+          path: my-agent-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
 
   release:
     needs: build
@@ -49,13 +59,10 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          pattern: my-agent-*
           merge-multiple: true
-
-      - name: List files
-        run: ls -la artifacts/
 
       - uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/*
+          files: my-agent-*
           generate_release_notes: true
