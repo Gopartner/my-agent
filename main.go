@@ -18,7 +18,7 @@ func main() {
 
 	m := internal.InitialModel()
 	p := tea.NewProgram(
-		&m,
+		m,
 		tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),
 	)

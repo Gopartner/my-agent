@@ -51,12 +51,12 @@ func (m *model) SetProgram(p *tea.Program) {
 	m.prog = p
 }
 
-func InitialModel() model {
+func InitialModel() *model {
 	s := spinner.New()
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#7C3AED"))
 	s.Spinner = spinner.Dot
 
-	m := model{
+	m := &model{
 		styles:  NewStyles(),
 		spinner: s,
 		agent:   NewAgent("."),
@@ -90,11 +90,11 @@ func extractChatHistory(msgs []Message) []ChatMsg {
 	return history
 }
 
-func (m model) Init() tea.Cmd {
+func (m *model) Init() tea.Cmd {
 	return tea.Batch(m.spinner.Tick, tea.EnterAltScreen)
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -272,7 +272,7 @@ func (m *model) processUserMessage(userMsg string) {
 	m.prog.Send(done)
 }
 
-func (m model) renderChat() string {
+func (m *model) renderChat() string {
 	var b strings.Builder
 	for _, chat := range m.chatHistory {
 		switch chat.Role {
@@ -297,7 +297,7 @@ func (m model) renderChat() string {
 	return b.String()
 }
 
-func (m model) View() string {
+func (m *model) View() string {
 	if !m.ready {
 		return "\n  Loading..."
 	}
